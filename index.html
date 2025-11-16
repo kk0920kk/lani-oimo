@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lani VS いろんなお芋達</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #fff7e6, #ffe0b2);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .app {
+      position: relative;
+      width: 380px;
+      max-width: 95vw;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 16px 18px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+      text-align: center;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: #8c6b3f;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .top-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #6a5432;
+      margin-bottom: 8px;
+    }
+    .battle-area {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .enemy-area,
+    .player-area {
+      margin-top: 4px;
+      padding: 10px;
+      border-radius: 14px;
+      background: #fff8e6;
+      border: 1px solid #f3c57a;
+      position: relative;
+      overflow: hidden;
+    }
+    .player-area {
+      background: #e9f7ff;
+      border-color: #80c4ff;
+    }
+    .enemy-name,
+    .player-name {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .enemy-emoji,
+    .player-emoji {
+      font-size: 60px;
+      text-align: center;
+      margin: 4px 0;
+      transition: transform 0.12s, filter 0.12s;
+    }
+    .enemy-emoji.hit,
+    .player-emoji.hit {
+      transform: translateY(-3px) scale(1.05);
+    }
+    .enemy-emoji.crit,
+    .player-emoji.crit {
+      filter: drop-shadow(0 0 10px rgba(255, 50, 50, 0.9));
+      animation: critShake 0.3s ease-in-out;
+    }
+    @keyframes critShake {
+      0% { transform: translate(-1px, -2px) scale(1.1); }
+      25% { transform: translate(2px, -1px) scale(1.1); }
+      50% { transform: translate(-2px, 1px) scale(1.1); }
+      75% { transform: translate(1px, 2px) scale(1.1); }
+      100% { transform: translate(0,0) scale(1.05); }
+    }
+    .hp-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 4px;
+      color: #6a5432;
+    }
+    .player-area .hp-label-row {
+      color: #356079;
+    }
+    .hp-bar-container {
+      width: 100%;
+      height: 14px;
+      background: #f0e0c2;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .player-area .hp-bar-container {
+      background: #cde9ff;
+    }
+    .hp-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ff5252, #ffb347);
+      transition: width 0.15s;
+    }
+    .player-area .hp-bar {
+      background: linear-gradient(90deg, #42a5f5, #81c784);
+    }
+    .log {
+      margin-top: 10px;
+      min-height: 3.2em;
+      font-size: 13px;
+      color: #5c4630;
+      white-space: pre-line;
+    }
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .attack-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    button {
+      padding: 8px 0;
+      border-radius: 999px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+      transition: transform 0.08s, box-shadow 0.08s, opacity 0.12s;
+      white-space: nowrap;
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.18);
+    }
+    .attack-btn {
+      background: linear-gradient(135deg, #ff7043, #ffb300);
+      color: #fff;
+    }
+    #retryButton {
+      background: #ece0d1;
+      color: #5c4630;
+      width: 100%;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+    .hint {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #9b7a4a;
+      text-align: center;
+    }
+    .damage-pop {
+      position: absolute;
+      left: 50%;
+      top: 20%;
+      transform: translateX(-50%);
+      font-weight: 700;
+      font-size: 18px;
+      color: #ff5722;
+      text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+      pointer-events: none;
+      animation: popUp 0.6s ease-out forwards;
+    }
+    .damage-pop.crit {
+      color: #ff1744;
+      font-size: 22px;
+      text-shadow: 0 0 8px rgba(255, 23, 68, 0.9);
+    }
+    @keyframes popUp {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 0) scale(0.8);
+      }
+      20% {
+        opacity: 1;
+        transform: translate(-50%, -8px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -32px) scale(1);
+      }
+    }
+
+    /* 1080 / 5555 用中央ビッグエフェクト */
+    .big-effect {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .big-effect-text {
+      padding: 12px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #ff7043;
+      font-size: 20px;
+      font-weight: 800;
+      color: #ff5722;
+      box-shadow: 0 0 20px rgba(255, 112, 67, 0.7);
+      transform: scale(0.5);
+    }
+    .big-effect.show {
+      animation: bigPop 0.9s ease-out forwards;
+    }
+    @keyframes bigPop {
+      0% {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      20% {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+      60% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Lani VS いろんなお芋達 🥔</h1>
+    <div class="subtitle">たくさん倒してライバーとして成長するぞ！</div>
+
+    <!-- 総討伐数表示 -->
+    <div class="top-status">
+      <span id="totalKillsText">総討伐数：0体</span>
+      <span id="currentEnemyLabel">現在の敵：-</span>
+    </div>
+
+    <div class="battle-area">
+      <!-- 敵エリア -->
+      <div class="enemy-area" id="enemyArea">
+        <div class="enemy-name" id="enemyName"></div>
+        <div class="enemy-emoji" id="enemyEmoji">🥔</div>
+        <div class="hp-label-row">
+          <span>敵HP</span>
+          <span id="hpText">0 / 0</span>
+        </div>
+        <div class="hp-bar-container">
+          <div class="hp-bar" id="hpBar"></div>
+        </div>
+      </div>
+
+      <!-- プレイヤーエリア -->
+      <div class="player-area" id="playerArea">
+        <div class="player-name" id="playerName">お芋ハンターLani</div>
+        <div class="player-emoji" id="playerEmoji">👧</div>
+        <div class="hp-label-row">
+          <span>自分のHP</span>
+          <span id="playerHpText">9999 / 9999</span>
+        </div>
+        <div class="hp-bar-container">
+          <div class="hp-bar" id="playerHpBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- バトルログ -->
+    <div class="log" id="logText">攻撃ボタンを押してバトル開始！</div>
+
+    <!-- ボタン -->
+    <div class="controls">
+      <div class="attack-row">
+        <button id="btn55" class="attack-btn">５５</button>
+        <button id="btn111" class="attack-btn">１１１</button>
+        <button id="btn1080" class="attack-btn">１０８０</button>
+        <button id="btn5555" class="attack-btn">５５５５</button>
+      </div>
+      <button id="retryButton">リセット</button>
+    </div>
+
+    <div class="hint">
+      ・敵を倒すたびにHP全回復＆次のお芋がランダム出現<br />
+      ・総討伐数はリセットしても引き継がれます
+    </div>
+
+    <!-- 中央ビッグエフェクト -->
+    <div id="bigEffect" class="big-effect">
+      <div id="bigEffectText" class="big-effect-text">討伐数 +0</div>
+    </div>
+  </div>
+
+  <script>
+    // ============================
+    // 敵データ（HPはすべて10）
+    // ============================
+    const enemies = [
+      { name: "一生グレーのお芋", maxHp: 10, emoji: "🥔" },
+      { name: "花火タグからきてBOXとろうとするお芋", maxHp: 10, emoji: "🎆🥔" },
+      { name: "シンプルな変態お芋", maxHp: 10, emoji: "😈🥔" },
+      { name: "枠に入ってきてすぐ見た目をディスるお芋", maxHp: 10, emoji: "😒🥔" },
+      { name: "すっごいメンヘラお芋", maxHp: 10, emoji: "🥺🥔" },
+      { name: "何か色々自慢ばっかりお芋", maxHp: 10, emoji: "😎🥔" },
+      { name: "コアもとってないのにDMしてくるお芋", maxHp: 10, emoji: "📩🥔" },
+      { name: "何か惜しい芋", maxHp: 10, emoji: "🤏🥔" },
+      { name: "プライベート深堀りお芋", maxHp: 10, emoji: "🕵️‍♂️🥔" },
+      { name: "見返り強要お芋", maxHp: 10, emoji: "🤝🥔" },
+      { name: "アドバイス押し付けお芋", maxHp: 10, emoji: "📢🥔" },
+      { name: "他のリスナー攻撃お芋", maxHp: 10, emoji: "💣🥔" },
+      { name: "なぜか上から目線お芋", maxHp: 10, emoji: "👑🥔" },
+      { name: "ネガティブ発言祭りお芋", maxHp: 10, emoji: "🌀🥔" },
+      { name: "枠即抜お芋", maxHp: 10, emoji: "🏃‍♂️🥔" },
+      { name: "投げる投げる詐欺お芋", maxHp: 10, emoji: "💸🥔" },
+      { name: "恐怖の無言居座りお芋", maxHp: 10, emoji: "👀🥔" },
+      { name: "賞味期限のきれたお芋", maxHp: 10, emoji: "💀🥔" },
+      { name: "名前が卑猥すぎるお芋", maxHp: 10, emoji: "🙈🥔" },
+      { name: "承認欲求の塊お芋", maxHp: 10, emoji: "📸🥔" },
+      { name: "あ、どうも、芋です", maxHp: 10, emoji: "🙋‍♂️🥔" },
+      { name: "距離感バグってるお芋", maxHp: 10, emoji: "🤝🥔" }
+    ];
+
+    const PLAYER_MAX_HP = 9999;
+
+    let currentEnemyIndex = 0;
+    let enemyHp = enemies[currentEnemyIndex].maxHp;
+    let playerHp = PLAYER_MAX_HP;
+    let totalKills = 0;
+    let isBusy = false;
+
+    // ============================
+    // DOM取得
+    // ============================
+    const enemyNameEl = document.getElementById("enemyName");
+    const enemyEmojiEl = document.getElementById("enemyEmoji");
+    const hpTextEl = document.getElementById("hpText");
+    const hpBarEl = document.getElementById("hpBar");
+
+    const playerEmojiEl = document.getElementById("playerEmoji");
+    const playerHpTextEl = document.getElementById("playerHpText");
+    const playerHpBarEl = document.getElementById("playerHpBar");
+
+    const enemyAreaEl = document.getElementById("enemyArea");
+    const playerAreaEl = document.getElementById("playerArea");
+
+    const logTextEl = document.getElementById("logText");
+    const totalKillsTextEl = document.getElementById("totalKillsText");
+    const currentEnemyLabelEl = document.getElementById("currentEnemyLabel");
+
+    const btn55 = document.getElementById("btn55");
+    const btn111 = document.getElementById("btn111");
+    const btn1080 = document.getElementById("btn1080");
+    const btn5555 = document.getElementById("btn5555");
+    const retryButton = document.getElementById("retryButton");
+
+    const bigEffectEl = document.getElementById("bigEffect");
+    const bigEffectTextEl = document.getElementById("bigEffectText");
+
+    // ============================
+    // サウンド（打撃音 & 斬撃音）
+    // ============================
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    // 打撃音：短い低めの「ドン」
+    function playHitSound() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "square";
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.15);
+    }
+
+    // 斬撃音：高めのシャキーン（敵撃破用）
+    function playKillSound() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc1.type = "sawtooth";
+      osc2.type = "square";
+
+      osc1.frequency.setValueAtTime(900, now);
+      osc1.frequency.exponentialRampToValueAtTime(300, now + 0.18);
+
+      osc2.frequency.setValueAtTime(1500, now);
+      osc2.frequency.exponentialRampToValueAtTime(500, now + 0.18);
+
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.22);
+      osc2.stop(now + 0.22);
+    }
+
+    // ============================
+    // ダメージテーブル
+    // ============================
+    const baseDamageTable = [
+      { value: 3, weight: 2.5 },
+      { value: 4, weight: 2.5 },
+      { value: 5, weight: 10 },
+      { value: 6, weight: 10 },
+      { value: 7, weight: 10 },
+      { value: 8, weight: 10 },
+      { value: 9, weight: 10 },
+      { value: 10, weight: 25 },
+      { value: 15, weight: 15 },
+      { value: 9999, weight: 5 }
+    ];
+    const totalBaseWeight = baseDamageTable.reduce((s, d) => s + d.weight, 0);
+
+    const damageTable55 = [
+      { value: 1, weight: 50 },
+      { value: 2, weight: 25 },
+      { value: 3, weight: 20 },
+      { value: 9999, weight: 5 }
+    ];
+    const total55 = damageTable55.reduce((s, d) => s + d.weight, 0);
+
+    const damageTable111 = [
+      { value: 2, weight: 50 },
+      { value: 4, weight: 25 },
+      { value: 6, weight: 20 },
+      { value: 9999, weight: 5 }
+    ];
+    const total111 = damageTable111.reduce((s, d) => s + d.weight, 0);
+
+    function drawFromTable(table, totalWeight) {
+      const r = Math.random() * totalWeight;
+      let acc = 0;
+      for (const d of table) {
+        acc += d.weight;
+        if (r <= acc) return d.value;
+      }
+      return table[table.length - 1].value;
+    }
+
+    const damageTables = {
+      "55":  { table: damageTable55,  total: total55 },
+      "111": { table: damageTable111, total: total111 }
+    };
+
+    function getDamageForSkill(skillKey) {
+      const info = damageTables[skillKey];
+      if (!info) return drawFromTable(baseDamageTable, totalBaseWeight);
+      return drawFromTable(info.table, info.total);
+    }
+
+    function getEnemyDamage() {
+      return drawFromTable(baseDamageTable, totalBaseWeight);
+    }
+
+    // ============================
+    // 演出
+    // ============================
+    function showDamagePop(targetEl, value, isCrit = false, isFromEnemy = false) {
+      const pop = document.createElement("div");
+      pop.classList.add("damage-pop");
+      if (isCrit) pop.classList.add("crit");
+      pop.style.top = isFromEnemy ? "30%" : "20%";
+      pop.textContent = value;
+      targetEl.appendChild(pop);
+      setTimeout(() => pop.remove(), 650);
+    }
+
+    function showBigEffect(addValue) {
+      bigEffectTextEl.textContent = `討伐数 +${addValue}`;
+      bigEffectEl.classList.remove("show");
+      void bigEffectEl.offsetWidth;
+      bigEffectEl.classList.add("show");
+      setTimeout(() => {
+        bigEffectEl.classList.remove("show");
+      }, 900);
+    }
+
+    // ============================
+    // 状態更新・描画
+    // ============================
+    function render() {
+      const enemy = enemies[currentEnemyIndex];
+      enemyNameEl.textContent = `${enemy.name}（HP ${enemy.maxHp}）`;
+      enemyEmojiEl.textContent = enemy.emoji;
+
+      if (enemyHp < 0) enemyHp = 0;
+      if (playerHp < 0) playerHp = 0;
+
+      hpTextEl.textContent = `${enemyHp} / ${enemy.maxHp}`;
+      const eratio = Math.max(0, enemyHp / enemy.maxHp);
+      hpBarEl.style.width = (eratio * 100) + "%";
+
+      playerHpTextEl.textContent = `${playerHp} / ${PLAYER_MAX_HP}`;
+      const pratio = Math.max(0, playerHp / PLAYER_MAX_HP);
+      playerHpBarEl.style.width = (pratio * 100) + "%";
+
+      totalKillsTextEl.textContent = `総討伐数：${totalKills}体`;
+      currentEnemyLabelEl.textContent = `現在の敵：${enemy.name}`;
+    }
+
+    function spawnNewEnemy() {
+      const idx = Math.floor(Math.random() * enemies.length);
+      currentEnemyIndex = idx;
+      const enemy = enemies[currentEnemyIndex];
+      enemyHp = enemy.maxHp;
+      render();
+      logTextEl.textContent += `\n新たな敵「${enemy.name}」があらわれた！`;
+    }
+
+    function enableAttackButtons(flag) {
+      btn55.disabled = !flag;
+      btn111.disabled = !flag;
+      btn1080.disabled = !flag;
+      btn5555.disabled = !flag;
+    }
+
+    // 総討伐数はリセットしない
+    function resetBattle() {
+      playerHp = PLAYER_MAX_HP;
+      const idx = Math.floor(Math.random() * enemies.length);
+      currentEnemyIndex = idx;
+      enemyHp = enemies[currentEnemyIndex].maxHp;
+      isBusy = false;
+      enableAttackButtons(true);
+      logTextEl.textContent = "攻撃ボタンを押してバトル開始！";
+      render();
+    }
+
+    function checkPlayerDeath() {
+      if (playerHp <= 0) {
+        logTextEl.textContent += `\nお芋ハンターLaniは倒れてしまった…スクワット10回で鍛えなおして再挑戦！💤`;
+        enableAttackButtons(false);
+        return true;
+      }
+      return false;
+    }
+
+    // ============================
+    // プレイヤー攻撃〜敵反撃
+    // ============================
+    function doPlayerAttack(skillKey) {
+      initAudio();
+      if (playerHp <= 0 || isBusy) return;
+
+      // 1080 / 5555：目の前の敵を即討伐＋追加討伐ボーナス
+      if (skillKey === "1080" || skillKey === "5555") {
+        if (enemyHp <= 0) return; // 既に敵がいない場合は無効
+        isBusy = true;
+
+        const addKills = skillKey === "1080" ? 2 : 11; // 合計で2体 / 11体ぶん
+        const enemyName = enemies[currentEnemyIndex].name;
+
+        // 目の前の敵を即討伐
+        enemyHp = 0;
+        totalKills += addKills;
+        playerHp = PLAYER_MAX_HP; // Lani全回復
+
+        if (skillKey === "1080") {
+          logTextEl.textContent =
+            `らにちゃんとバンバンしよぉ\n${enemyName} を一瞬で討伐！\n討伐数が${addKills}体ぶん増えた！`;
+        } else {
+          logTextEl.textContent =
+            `らにちゃんといいことしよーね♡\n${enemyName} を一瞬で討伐！\n討伐数が${addKills}体ぶん増えた！`;
+        }
+
+        playKillSound();       // 斬撃音
+        render();
+        showBigEffect(addKills);
+
+        setTimeout(() => {
+          spawnNewEnemy();
+          isBusy = false;
+        }, 900);
+
+        return;
+      }
+
+      // ここから 55 / 111 の通常攻撃
+      if (enemyHp <= 0) return;
+      isBusy = true;
+
+      const dmg = getDamageForSkill(skillKey);
+      const isCrit = dmg === 9999;
+
+      playHitSound(); // 打撃音（プレイヤー攻撃）
+
+      enemyHp -= dmg;
+      enemyEmojiEl.classList.add("hit");
+      if (isCrit) enemyEmojiEl.classList.add("crit");
+      showDamagePop(enemyAreaEl, `-${dmg}`, isCrit, false);
+
+      if (isCrit) {
+        logTextEl.textContent = `会心の一撃！！ ${dmg} ダメージあたえた！`;
+      } else {
+        logTextEl.textContent =
+          `こうげき！（${skillKey}） ${dmg} ダメージあたえた！`;
+      }
+
+      render();
+
+      setTimeout(() => {
+        enemyEmojiEl.classList.remove("hit");
+        enemyEmojiEl.classList.remove("crit");
+      }, 300);
+
+      // 敵撃破
+      if (enemyHp <= 0) {
+        enemyHp = 0;
+        totalKills += 1;
+        logTextEl.textContent += `\n${enemies[currentEnemyIndex].name} を倒した！🍠✨`;
+        playerHp = PLAYER_MAX_HP;
+        logTextEl.textContent += `\nお芋ハンターLaniのHPは全回復した！💖`;
+        playKillSound();  // 斬撃音
+        render();
+
+        setTimeout(() => {
+          spawnNewEnemy();
+          isBusy = false;
+        }, 500);
+        return;
+      }
+
+      // 敵の反撃
+      setTimeout(() => {
+        if (playerHp <= 0 || enemyHp <= 0) {
+          isBusy = false;
+          return;
+        }
+
+        const enemyDmg = getEnemyDamage();
+        const enemyCrit = enemyDmg === 9999;
+
+        playHitSound(); // 打撃音（敵の攻撃）
+
+        playerHp -= enemyDmg;
+        playerEmojiEl.classList.add("hit");
+        if (enemyCrit) playerEmojiEl.classList.add("crit");
+        showDamagePop(playerAreaEl, `-${enemyDmg}`, enemyCrit, true);
+
+        if (enemyCrit) {
+          logTextEl.textContent +=
+            `\n${enemies[currentEnemyIndex].name} の会心の一撃！！ Laniは ${enemyDmg} のダメージを受けた！`;
+        } else {
+          logTextEl.textContent +=
+            `\n${enemies[currentEnemyIndex].name} の反撃！ Laniは ${enemyDmg} のダメージを受けた！`;
+        }
+
+        render();
+
+        setTimeout(() => {
+          playerEmojiEl.classList.remove("hit");
+          playerEmojiEl.classList.remove("crit");
+        }, 250);
+
+        checkPlayerDeath();
+        isBusy = false;
+      }, 500);
+    }
+
+    // ============================
+    // イベント登録
+    // ============================
+    btn55.addEventListener("click", () => doPlayerAttack("55"));
+    btn111.addEventListener("click", () => doPlayerAttack("111"));
+    btn1080.addEventListener("click", () => doPlayerAttack("1080"));
+    btn5555.addEventListener("click", () => doPlayerAttack("5555"));
+    retryButton.addEventListener("click", resetBattle);
+
+    // 初期状態
+    resetBattle();
+  </script>
+</body>
+</html>
